@@ -1,0 +1,21 @@
+# 排除 Python 缓存
+__pycache__/
+*.py[cod]
+
+# 排除 Jupyter 运行记录
+.ipynb_checkpoints/
+
+# 排除大数据集（非常重要！）
+data/
+*.zip
+*.tar.gz
+
+# 排除模型权重文件
+*.pth
+*.pt
+*.onnx
+
+# 排除系统文件
+.DS_Store
+
+
