@@ -6,7 +6,48 @@ from IPython import display
 # 加载Fashion-MNIST数据集，并将其分成训练集和测试集.
 batch_size = 256 
 # 使用指定的批量大小。
-train_iter, test_iter = d2l.load_data_fashion_mnist(batch_size) 
+
+
+import os
+import torch
+import torchvision
+from torchvision import transforms
+from torch.utils import data
+
+data_path = "/home/syalis/d2l_Code/d2l-pytorch/pytorch/data"
+
+# 定义补丁类
+class MyFashionMNIST(torchvision.datasets.FashionMNIST):
+    def __init__(self, root, train=True, transform=None, target_transform=None):
+        # 强制设置 download=False
+        super(MyFashionMNIST, self).__init__(root, train=train, transform=transform, 
+                                            target_transform=target_transform, download=False)
+
+    @property
+    def raw_folder(self) -> str:
+        # 强制指向已有的 FashionMNIST 文件夹，而不是类名对应的文件夹
+        return os.path.join(self.root, 'FashionMNIST', 'raw')
+
+    @property
+    def processed_folder(self) -> str:
+        return os.path.join(self.root, 'FashionMNIST', 'processed')
+
+    def _check_exists(self):
+        # 告诉它文件肯定在
+        return True
+
+# 实例化
+trans = transforms.ToTensor()
+batch_size = 256
+
+train_set = MyFashionMNIST(root=data_path, train=True, transform=trans)
+test_set = MyFashionMNIST(root=data_path, train=False, transform=trans)
+
+train_iter = data.DataLoader(train_set, batch_size, shuffle=True)
+test_iter = data.DataLoader(test_set, batch_size, shuffle=False)
+
+print("数据加载成功！")
+
 # 这里的train_iter和test_iter是数据迭代器，可以用于在训练和测试过程中按批次获取数据。
 # 通过调用d2l.load_data_fashion_mnist函数，我们可以轻松地加载Fashion-MNIST数据集，并准备好用于训练和评估模型的数据迭代
 
@@ -58,7 +99,7 @@ def accuracy(y_hat, y):  #@save
 def train_epoch_ch3(net, train_iter, loss, updater):  #@save
     """训练模型一个迭代周期（定义见第3章）"""
     # 将模型设置为训练模式，这样某些特定于训练的层（如dropout和batch normalization）会以正确的方式工作。
-    net.train()
+    # net.train()
     # 初始化总损失和正确预测的数量，以及样本总数。
     total_loss, total_acc, n = 0.0, 0.0, 0
     # 遍历训练数据集中的每个批次。
@@ -76,7 +117,8 @@ def train_epoch_ch3(net, train_iter, loss, updater):  #@save
             l.sum().backward() # 反向传播计算梯度
             updater(X.shape[0]) # 更新参数，传入当前批次的样本数量
         # 累加当前批次的损失和正确预测的数量，并更新样本总数。
-        total_loss += float(l.sum())
+        # total_loss += float(l.sum()) 换成下面的 detach().item()，以避免潜在的内存泄漏问题。
+        total_loss += l.sum().detach().item()
         total_acc += float(accuracy(y_hat, y))
         n += y.shape[0]
     # 返回平均损失和平均准确率。
@@ -91,7 +133,7 @@ for i in range(epochs):
 # 评估模型在测试集上的准确率。
 def evaluate_accuracy(net, data_iter):  #@save
     """评估模型在指定数据集上的准确率"""
-    net.eval()  # 将模型设置为评估模式，这样某些特定于训练的层（如dropout和batch normalization）会以正确的方式工作。
+    # net.eval()  # 将模型设置为评估模式，这样某些特定于训练的层（如dropout和batch normalization）会以正确的方式工作。
     acc_sum, n = 0.0, 0
     with torch.no_grad(): # 在评估过程中不需要计算梯度，因此使用torch.no_grad()上下文管理器来禁用梯度计算，以节省内存和计算资源。
         for X, y in data_iter:
