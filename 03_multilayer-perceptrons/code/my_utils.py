@@ -36,7 +36,7 @@ def evaluate_accuracy(net, data_iter):
             n += y.shape[0]
     return acc_sum / n
 
-# --- 3. 训练逻辑 ---
+# 3. 训练逻辑
 def train_epoch(net, train_iter, loss, updater):
     total_loss, total_acc, n = 0.0, 0.0, 0
     for X, y in train_iter:
