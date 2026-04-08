@@ -104,11 +104,12 @@ train_labels = torch.tensor(
 loss = nn.MSELoss()
 in_features = train_features.shape[1]
 
-# 使用其他模型（这里采用多层感知机）
+# 使用其他模型（这里采用多层感知机 + 暂退）
 def get_net():
     net = nn.Sequential(
         nn.Linear(in_features, 256),
         nn.ReLU(),
+        nn.Dropout(0.5), # 在第一个全连接层的激活函数后添加一个Dropout层，丢弃率为0.5
         nn.Linear(256, 128),
         nn.ReLU(),
         nn.Linear(128, 1)
@@ -117,10 +118,11 @@ def get_net():
 
 # 下面的函数用于在训练过程中评估模型的表现。由于房价的数量级可能很大，我们对预测值和真实值取对数来稳定它们。
 def log_rmse(net, features, labels):
-    # 为了在取对数时进一步稳定该值，将小于1的值设置为1
-    clipped_preds = torch.clamp(net(features), 1, float('inf'))
-    rmse = torch.sqrt(loss(torch.log(clipped_preds),
-                           torch.log(labels)))
+    net.eval()                     # 关闭 Dropout，避免在评估模型时随机丢弃神经元导致结果不稳定
+    with torch.no_grad():
+        clipped_preds = torch.clamp(net(features), 1, float('inf'))
+        rmse = torch.sqrt(loss(torch.log(clipped_preds), torch.log(labels)))
+    net.train()                    # 恢复训练模式（下一次训练时重新开启 Dropout）
     return rmse.item()
 
 # 下面的函数实现了训练过程。我们使用Adam优化算法来更新模型的参数。
@@ -195,6 +197,7 @@ def train_and_pred(train_features, test_features, train_labels, test_data,
     net = get_net()
     train_ls, _ = train(net, train_features, train_labels, None, None,
                         num_epochs, lr, weight_decay, batch_size)
+    net.eval() # 关闭 Dropout，避免在评估模型时随机丢弃神经元导致结果不稳定
     d2l.plot(np.arange(1, num_epochs + 1), [train_ls], xlabel='epoch',
              ylabel='log rmse', xlim=[1, num_epochs], yscale='log')
     print(f'训练log rmse：{float(train_ls[-1]):f}')
