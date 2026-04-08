@@ -9,7 +9,7 @@ class sequential_block(nn.Module):
         # 位置参数是指在函数调用时按照位置传递的参数。
         # 关键字参数是指在函数调用时使用参数名称进行传递的参数。
         super().__init__(*args, **kwargs)
-        # 这里我们创建两个并行的网络net1和net2，它们具有相同的结构，但参数不同。
+        # 这里我们创建两个串行的网络net1和net2，它们具有相同的结构，但参数不同。
         self.net1 = nn.Sequential(nn.Linear(20, 256), nn.ReLU(), nn.Linear(256, 10))
         self.net2 = nn.Sequential(nn.Linear(10, 256), nn.ReLU(), nn.Linear(256, 10))
         
